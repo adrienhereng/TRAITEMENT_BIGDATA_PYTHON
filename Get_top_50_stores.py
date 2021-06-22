@@ -19,7 +19,7 @@ def Generateur_Dict(file_name, start,end) :
         i=i+1
 
 # fonction permettant d'effectuer l'aggregation sum() sur une liste de dictionnaire en parallele
-def parallele_process(file_name, start,end, group_by_key, sum_value_keys):
+def parallel_process(file_name, start,end, group_by_key, sum_value_keys):
     dataset = Generateur_Dict(file_name, start, end)
 
     return group_and_sum_dataset(dataset, group_by_key, sum_value_keys)
@@ -60,23 +60,21 @@ if __name__=='__main__':
     print('Process started...')
     start = time.time()
     file_name='randomized-transactions-202009.psv'
-    file_size = 162413730
+    file_nb_row = 162413730
     ca_par_magasin=[]
     nb_process=os.cpu_count()-1
-    chunk_size = int(round(file_size/nb_process))
+    chunk_size = int(round(file_nb_row/nb_process))
 
 
     pool = mp.Pool(nb_process)
 
     for i in range(nb_process):
         b = i*chunk_size
-        pool.apply_async(process,args= (file_name, b, b+chunk_size, ['code_magasin'], 'ca'),callback=get_ca_magasin)
+        pool.apply_async(parallel_process,args= (file_name, b, b+chunk_size, ['code_magasin'], 'ca'),callback=get_ca_magasin)
 
     pool.close()
     pool.join()
 
-    end = time.time()
-    print(end - start)
 
     dataset_res=group_and_sum_dataset(ca_par_magasin,['code_magasin'], 'ca')
     dataset_res.sort(key=lambda item: [item['ca']],reverse=True)
